@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:bitcoin/coin.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,41 +12,66 @@ class PriceScreen extends StatefulWidget {
 
 class _PriceScreenState extends State<PriceScreen> {
   String selectedCurrency = 'USD';
+  var bitcoinValueInUSD;
 
-  List<DropdownMenuItem<String>> getCurrencies() {
+  DropdownButton<String> andriodDropdown() {
     final dropdownItems = <DropdownMenuItem<String>>[];
     for (var i = 0; i < currenciesList.length; i++) {
       final currency = currenciesList[i];
-      final newItem = DropdownMenuItem(
-        value: currency, 
-        child: Text(currency),
-      );
+      final newItem = DropdownMenuItem(value: currency, child: Text(currency));
       dropdownItems.add(newItem);
     }
-    return dropdownItems;
+    return DropdownButton<String>(
+      value: selectedCurrency,
+      items: dropdownItems,
+      onChanged: (value) {
+        setState(() {
+          selectedCurrency = value!;
+        });
+      },
+    );
   }
 
-  List<Widget> getPickerItems(){
+  CupertinoPicker iOSPicker() {
     final pickerItems = <Widget>[];
-    for (var i = 0; i < currenciesList.length; i++){
+    for (var i = 0; i < currenciesList.length; i++) {
       final currency = currenciesList[i];
       final newItem = Text(currency);
       pickerItems.add(newItem);
     }
-    return pickerItems;
+    return CupertinoPicker(
+      itemExtent: 32,
+      onSelectedItemChanged: (selectedIndex) {
+        print(selectedIndex);
+      },
+      children: pickerItems,
+    );
+  }
+
+  void getData() async {
+    try {
+      var data = await CoinData().getCoin();
+      if(data != null){
+        setState(() {
+        bitcoinValueInUSD = data.toStringAsFixed(0);
+         });
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 188, 186, 188),
-      appBar: AppBar(
-        title: const Center(
-          child: Text(
-            'C O I N   T I C K E R',
-            ),
-          ),
-        ),
+      appBar: AppBar(title: const Center(child: Text('C O I N   T I C K E R'))),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,12 +84,12 @@ class _PriceScreenState extends State<PriceScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 15, horizontal: 28),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 28),
                 child: Text(
-                  '1 BTC = ? USD',
+                  '1 BTC = $bitcoinValueInUSD USD',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, color: Colors.white),
+                  style: const TextStyle(fontSize: 20, color: Colors.white),
                 ),
               ),
             ),
@@ -73,26 +99,10 @@ class _PriceScreenState extends State<PriceScreen> {
             alignment: Alignment.center,
             padding: const EdgeInsets.only(bottom: 30),
             color: const Color.fromARGB(255, 122, 121, 133),
-            child: CupertinoPicker(
-              itemExtent: 32,
-              onSelectedItemChanged: (selectedIndex) {
-                print(selectedIndex);
-              },
-              children: getPickerItems(),
-            ),
+            child: Platform.isIOS ? iOSPicker() : andriodDropdown(),
           ),
         ],
       ),
     );
   }
 }
-
-// DropdownButton<String>(
-//               value: selectedCurrency,
-//               items: getCurrencies(),
-//               onChanged: (value) {
-//                 setState(() {
-//                   selectedCurrency = value!;
-//                 });
-//               },
-//             ),
